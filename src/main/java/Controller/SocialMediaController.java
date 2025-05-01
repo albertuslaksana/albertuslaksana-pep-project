@@ -1,6 +1,7 @@
 package Controller;
 
 import java.sql.SQLException;
+import java.util.List;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -50,62 +51,42 @@ public class SocialMediaController {
     /**
      * This is an example handler for an example endpoint.
      * @param context The Javalin Context object manages information about both the HTTP request and response.
+     *  
      */
-    private void newUserRegisterHandler(Context context) {
+    private void newUserRegisterHandler(Context context) throws JsonProcessingException, SQLException {
         String jsonString = context.body();
         ObjectMapper om = new ObjectMapper();
-        try {
-            Account user = om.readValue(jsonString, Account.class);
-            if(user.getUsername().isBlank() || user.getPassword().length() < 4 || accountService.getAccountByUsername(user.getUsername()) != null){
-                context.status(400);
-                return;
-            }
-            Account newAccount = this.accountService.addAccount(user);
-            user.setAccount_id(newAccount.getAccount_id());
-            context.json(user);
-        } catch (JsonProcessingException e) {
-            System.out.println("BAD");
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } 
+        Account user = om.readValue(jsonString, Account.class);
+        Account temp = accountService.addAccount(user);
+        if(temp == null){
+            context.status(400);
+            return;
+        }
+        context.json(temp);
     }
 
-    private void loginHandler(Context context){
+    private void loginHandler(Context context) throws JsonProcessingException, SQLException{
         String jsonString = context.body();
         ObjectMapper om = new ObjectMapper();
-        try {
-            Account user = om.readValue(jsonString, Account.class);
-            if(accountService.getAccountByUsername(user.getUsername()) != null && accountService.getAccountByUsername(user.getUsername()).getPassword().equals(user.getPassword())){
-                user.setAccount_id(accountService.getAccountByUsername(user.getUsername()).getAccount_id());
-                context.json(user);
-            } else {
-                context.status(401);
-                return;
-            }
-        } catch (JsonProcessingException e) {
-            System.out.println("BAD");
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } 
+        Account user = om.readValue(jsonString, Account.class);
+        Account temp = accountService.accountLogin(user);
+        if(temp == null){
+            context.status(401);
+            return;
+        }
+        context.json(temp);
     }
 
-    private void postMessageHandler(Context context){
+    private void postMessageHandler(Context context) throws JsonProcessingException, SQLException{
         String jsonString = context.body();
         ObjectMapper om = new ObjectMapper();
-        try {
-            Message user = om.readValue(jsonString, Message.class);
-            if(user.getMessage_text().isBlank() || user.getMessage_text().length() > 255 || accountService.getAccountById(user.getPosted_by()) == null){
-                context.status(400);
-                return;
-            }
-            Message newMessage = this.messageService.addMessage(user);
-            user.setMessage_id(newMessage.getMessage_id());
-            context.json(user);
-        } catch (JsonProcessingException e) {
-            System.out.println("BAD");
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } 
+        Message user = om.readValue(jsonString, Message.class);
+        Message temp = messageService.addMessage(user);
+        if(temp == null){
+            context.status(400);
+            return;
+        }
+        context.json(temp);
     }
 
     private void getMessageHandler(Context context) throws SQLException{
@@ -114,43 +95,39 @@ public class SocialMediaController {
 
     private void getMessageByIdHandler(Context context) throws SQLException{
         int id = Integer.parseInt(context.pathParam("message_id"));
-        if(messageService.getMessageById(id) == null){
+        Message temp = messageService.getMessageById(id);
+        if(temp == null){
             return;
         }
-        context.json(messageService.getMessageById(id));
+        context.json(temp);
     }
 
     private void deleteMessageHandler(Context context) throws SQLException{
         int id = Integer.parseInt(context.pathParam("message_id"));
-        if(messageService.getMessageById(id) == null){
+        Message temp = messageService.deleteMessageById(id);
+        if(temp == null){
             return;
         }
-        context.json(messageService.getMessageById(id));
-        messageService.deleteMessageById(id);
+        context.json(temp);
     }
 
-    private void updateMessageHandler(Context context){
+    private void updateMessageHandler(Context context) throws JsonProcessingException, SQLException{
         int id = Integer.parseInt(context.pathParam("message_id"));
         String jsonString = context.body();
         ObjectMapper om = new ObjectMapper();
-        try {
-            Message user = om.readValue(jsonString, Message.class);
-            if(user.getMessage_text().isBlank() || user.getMessage_text().length() > 255 || accountService.getAccountById(id) == null){
-                context.status(400);
-                return;
-            }
-            this.messageService.updateMessageById(id, user.getMessage_text());;
-            context.json(messageService.getMessageById(id));
-        } catch (JsonProcessingException e) {
-            System.out.println("BAD");
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } 
+        Message user = om.readValue(jsonString, Message.class);
+        Message temp = messageService.updateMessageById(user, id);
+        if(temp == null){
+            context.status(400);
+            return;
+        }
+        context.json(temp);
     }
 
     private void getPostsFromUserHandler(Context context) throws SQLException{
         int id = Integer.parseInt(context.pathParam("account_id"));
-        if(messageService.getPostsFromUser(id) == null){
+        List<Message> temp = messageService.getPostsFromUser(id);
+        if(temp == null){
             return;
         }
         context.json(messageService.getPostsFromUser(id));

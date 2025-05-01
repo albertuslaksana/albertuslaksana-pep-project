@@ -22,11 +22,38 @@ public class AccountService{
     }
 
     public Account addAccount(Account account) throws SQLException{
+        if(!dataIsValid(account)){
+            return null;
+        }
         return this.accountDAO.insertAccount(account);
+    }
+
+    public boolean dataIsValid(Account account) throws SQLException{
+        if(account.getUsername().isBlank() || 
+        account.getPassword().length() < 4 || 
+        this.accountDAO.getAccountByUsername(account.getUsername()) != null){
+            return false;
+        }
+        return true;
+    }
+
+    public boolean loginIsValid(Account account) throws SQLException{
+        if(this.accountDAO.getAccountByUsername(account.getUsername()) != null &&
+        this.accountDAO.getAccountByUsername(account.getUsername()).getPassword().equals(account.getPassword())){
+            return true;
+        }
+        return false;
     }
 
     public Account getAccountByUsername(String username) throws SQLException{
         return this.accountDAO.getAccountByUsername(username);
+    }
+
+    public Account accountLogin(Account account) throws SQLException{
+        if(!loginIsValid(account)){
+            return null;
+        }
+        return getAccountByUsername(account.getUsername());
     }
 
     public Account getAccountById(int id) throws SQLException{
